@@ -63,7 +63,19 @@ class Card: SKSpriteNode {
                 let label = newLabelWith(lbl)
                 addChild(label)
             }
+        }
+        
+        //Enable/Disable drag an drop
+        if let cfgs = options{
             
+            if let drag = cfgs["drag"] as? Bool{
+                
+                userInteractionEnabled = drag
+            }else{
+                userInteractionEnabled = true
+            }
+        }else{
+            userInteractionEnabled = true
         }
         
     }
@@ -115,5 +127,41 @@ class Card: SKSpriteNode {
         }
         
         return label
+    }
+    
+    override func touchesBegan(touches: NSSet, withEvent event: UIEvent) {
+        /* Called when a touch begins */
+        
+        for touch in touches {
+            
+            zPosition = 15
+            
+            let pickUp = SKAction.scaleTo(0.35, duration: 0.2)
+            runAction(pickUp, withKey: "pickup")
+            
+        }
+        
+    }
+    
+    override func touchesMoved(touches: NSSet, withEvent event: UIEvent) {
+        
+        for touch in touches {
+            
+            let location = touch.locationInNode(scene)
+            let touchedNode = nodeAtPoint(location)
+            
+            touchedNode.position = location
+        }
+    }
+    
+    override func touchesEnded(touches: NSSet, withEvent event: UIEvent) {
+        for touch in touches {
+            
+            zPosition = 0
+            
+            let dropDown = SKAction.scaleTo(0.3, duration: 0.2)
+            runAction(dropDown, withKey: "drop")
+            
+        }
     }
 }
