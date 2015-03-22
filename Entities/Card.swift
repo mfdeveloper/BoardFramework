@@ -27,6 +27,17 @@ class Card: SKSpriteNode {
     */
     var faceUp = true
     
+    /**
+        Define if the drag and drop is enabled into a card
+    */
+    var draggable = true
+    
+    /**
+        The image element to show for a player when
+        the card is not draggable.
+    */
+    lazy var addedNotDragNode:SKNode? = nil
+    
     required init(coder aDecoder: NSCoder){
         
         fatalError("NSCoding not supported")
@@ -47,9 +58,12 @@ class Card: SKSpriteNode {
         if let cfgs = options {
             
             if let fUp = cfgs["faceUp"] as? Bool{
+                faceUp = fUp
                 
-                if !fUp{
+                if !faceUp{
                     cardTexture = SKTexture(imageNamed: textures["back"]!)
+                    
+                    faceUp = true
                 }
             }
         }
@@ -70,14 +84,15 @@ class Card: SKSpriteNode {
             
             if let drag = cfgs["drag"] as? Bool{
                 
-                userInteractionEnabled = drag
+                draggable = drag
             }else{
-                userInteractionEnabled = true
+                draggable = true
             }
         }else{
-            userInteractionEnabled = true
+            draggable = true
         }
         
+        userInteractionEnabled = true
     }
     
     /**
@@ -111,7 +126,118 @@ class Card: SKSpriteNode {
     }
     
     /**
-        Creates a label with configurations define in "options" dicionary param
+        Part of drag and drop feature to a card. This method is trigged
+        when the player release a tap in a Card.
+    
+        :param: touches A NSSet object collection with touches event
+        :param: withEvent The UIEvent object
+    */
+    override func touchesBegan(touches: NSSet, withEvent event: UIEvent) {
+        /* Called when a touch begins */
+        
+        for touch in touches {
+            let pickUp = SKAction.scaleTo(0.35, duration: 0.2)
+            
+            if touch.tapCount == 2{
+                flip()
+                
+                if !draggable{
+                    runAction(pickUp, withKey: "pickup")
+                }
+            }
+            
+            if !draggable{
+                let notMove = SKTexture(imageNamed: "no-interaction.png")
+                
+                addedNotDragNode = SKSpriteNode(texture: notMove, color: nil, size: notMove.size())
+                addedNotDragNode?.hidden = true
+                
+                addChild(addedNotDragNode as SKNode!)
+            }else{
+            
+                zPosition = 15
+                
+                
+                runAction(pickUp, withKey: "pickup")
+                
+            }
+            
+        }
+        
+    }
+    
+    /**
+        Part of drag and drop feature to a card. This method is trigged
+        when the player is moving a Card into the Scene.
+    
+        :param: touches A NSSet object collection with touches event
+        :param: withEvent The UIEvent object
+    */
+    override func touchesMoved(touches: NSSet, withEvent event: UIEvent) {
+        
+        if draggable{
+        
+            for touch in touches {
+                
+                let location = touch.locationInNode(scene)
+                let touchedNode = nodeAtPoint(location)
+                
+                touchedNode.position = location
+            }
+        }else{
+            addedNotDragNode?.hidden = false
+        }
+    }
+    
+    /**
+        Part of drag and drop feature to a card. This method is trigged
+        when the player drop a Card.
+        
+        :param: touches A NSSet object collection with touches event
+        :param: withEvent The UIEvent object
+    */
+    override func touchesEnded(touches: NSSet, withEvent event: UIEvent) {
+        
+        if draggable{
+            
+            for touch in touches {
+                
+                zPosition = 0
+                
+            }
+        }else{
+            removeChildrenInArray([addedNotDragNode as SKNode!])
+        }
+        
+        let dropDown = SKAction.scaleTo(0.3, duration: 0.2)
+        runAction(dropDown, withKey: "drop")
+    }
+    
+    /**
+        The action to called when the player turn the card
+        By default, the double taps in a card execute this 
+        method and change the "faceUp" property.
+    */
+    func flip(){
+        
+        if faceUp {
+            texture = getTextureOf("front")
+            for child in self.children{
+                (child as SKNode).hidden = false
+            }
+            
+            faceUp = false
+        }else{
+            texture = getTextureOf("back")
+            for child in self.children{
+                (child as SKNode).hidden = true
+            }
+            faceUp = true
+        }
+    }
+    
+    /**
+        Creates a label with configurations define in "options" dictionary param
     
         :param: options The Dicionary in ["property": value] format with attibutes
                         of to a SKLabelNode instance
@@ -122,46 +248,10 @@ class Card: SKSpriteNode {
         let label = SKLabelNode()
         
         for (propName, propValue) in options {
-
+            
             label[propName] = propValue
         }
         
         return label
-    }
-    
-    override func touchesBegan(touches: NSSet, withEvent event: UIEvent) {
-        /* Called when a touch begins */
-        
-        for touch in touches {
-            
-            zPosition = 15
-            
-            let pickUp = SKAction.scaleTo(0.35, duration: 0.2)
-            runAction(pickUp, withKey: "pickup")
-            
-        }
-        
-    }
-    
-    override func touchesMoved(touches: NSSet, withEvent event: UIEvent) {
-        
-        for touch in touches {
-            
-            let location = touch.locationInNode(scene)
-            let touchedNode = nodeAtPoint(location)
-            
-            touchedNode.position = location
-        }
-    }
-    
-    override func touchesEnded(touches: NSSet, withEvent event: UIEvent) {
-        for touch in touches {
-            
-            zPosition = 0
-            
-            let dropDown = SKAction.scaleTo(0.3, duration: 0.2)
-            runAction(dropDown, withKey: "drop")
-            
-        }
     }
 }
